@@ -85,6 +85,68 @@ Show top ratings:
 python main.py elo-rankings --type overall --top 20
 ```
 
+## API (FastAPI)
+
+You can now run the project as an HTTP API in addition to CLI commands.
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Set an API key for protected job endpoints:
+
+```bash
+export CROSS_COUNTRY_API_KEY="replace-with-your-secret"
+```
+
+Start the API server:
+
+```bash
+uvicorn api.app:app --reload
+# or
+python -m api
+```
+
+Open docs:
+
+- Swagger UI: `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
+
+Example read endpoints:
+
+- `GET /health`
+- `GET /v1/stats`
+- `GET /v1/rankings?type=overall&gender=M&top=20`
+- `GET /v1/athletes/search?q=klaebo&limit=10`
+- `GET /v1/athletes/{id}`
+- `GET /v1/matchup?a=Johannes&b=Federico&type=sprint`
+- `GET /v1/history?date=2024-01-15&gender=W&top=20`
+
+Example protected job endpoints (`x-api-key` header required):
+
+- `POST /v1/jobs/calendar`
+- `POST /v1/jobs/results`
+- `POST /v1/jobs/elo-build`
+- `POST /v1/jobs/backtest`
+- `GET /v1/jobs?limit=20&status=queued&type=elo-build`
+- `GET /v1/jobs/{job_id}`
+
+## Tests
+
+Install dev dependencies:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Run tests:
+
+```bash
+pytest -q
+```
+
 ## CLI Commands
 
 ### Data Ingestion

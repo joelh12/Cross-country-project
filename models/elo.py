@@ -559,7 +559,7 @@ def predict_matchup(athlete_a_id: int, athlete_b_id: int, race_type: str = 'over
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(f"""
-            SELECT a.name, e.{column}
+            SELECT e.athlete_id, a.name, e.{column}
             FROM elo_ratings e
             JOIN athletes a ON e.athlete_id = a.id
             WHERE e.athlete_id IN (?, ?)
@@ -569,16 +569,20 @@ def predict_matchup(athlete_a_id: int, athlete_b_id: int, race_type: str = 'over
         if len(rows) != 2:
             return {'error': 'Athletes not found'}
 
-        data = {row[0]: row[1] for row in rows}
-        names = list(data.keys())
+        data = {row[0]: {'name': row[1], 'rating': row[2]} for row in rows}
+        a_data = data.get(athlete_a_id)
+        b_data = data.get(athlete_b_id)
 
-        prob_a = expected_score(data[names[0]], data[names[1]])
+        if not a_data or not b_data:
+            return {'error': 'Athletes not found'}
+
+        prob_a = expected_score(a_data['rating'], b_data['rating'])
 
         return {
-            'athlete_a': names[0],
-            'athlete_b': names[1],
-            'rating_a': round(data[names[0]]),
-            'rating_b': round(data[names[1]]),
+            'athlete_a': a_data['name'],
+            'athlete_b': b_data['name'],
+            'rating_a': round(a_data['rating']),
+            'rating_b': round(b_data['rating']),
             'win_prob_a': round(prob_a * 100, 1),
             'win_prob_b': round((1 - prob_a) * 100, 1)
         }

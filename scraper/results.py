@@ -14,6 +14,11 @@ HEADERS = {
 }
 
 
+def normalize_whitespace(text: str) -> str:
+    """Collapse repeated whitespace and trim."""
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def parse_time_to_seconds(time_str: str) -> Optional[float]:
     """Convert time string to seconds. Handles formats like '25:31.8' or '1:02:31.8'."""
     if not time_str or time_str.strip() in ["", "-", "DNF", "DNS", "DSQ", "LAP"]:
@@ -40,6 +45,27 @@ def extract_athlete_id(href: str) -> Optional[int]:
     """Extract athlete ID from profile URL."""
     match = re.search(r"id=(\d+)", href)
     return int(match.group(1)) if match else None
+
+
+def extract_athlete_name(athlete_link) -> str:
+    """
+    Extract athlete name from profile link.
+
+    Handles pages that separate first/last names across spans and pages that
+    render the full name directly in the anchor text.
+    """
+    first_name = athlete_link.find("span", class_=re.compile(r"first", re.IGNORECASE))
+    last_name = athlete_link.find("span", class_=re.compile(r"last", re.IGNORECASE))
+
+    if first_name and last_name:
+        first_text = normalize_whitespace(first_name.get_text(" ", strip=True))
+        last_text = normalize_whitespace(last_name.get_text(" ", strip=True))
+        full_name = normalize_whitespace(f"{first_text} {last_text}")
+        if full_name:
+            return full_name
+
+    # Use explicit separator so adjacent HTML nodes don't get concatenated.
+    return normalize_whitespace(athlete_link.get_text(" ", strip=True))
 
 
 def scrape_results_page(event_fis_id: int, gender: str) -> list[dict]:
@@ -91,7 +117,7 @@ def scrape_results_page(event_fis_id: int, gender: str) -> list[dict]:
             if not athlete_link:
                 continue
 
-            athlete_name = athlete_link.get_text(strip=True)
+            athlete_name = extract_athlete_name(athlete_link)
             athlete_fis_id = extract_athlete_id(athlete_link["href"])
 
             birth_year_text = cells[3].get_text(strip=True)
